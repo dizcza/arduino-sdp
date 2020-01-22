@@ -28,11 +28,11 @@ void loop() {
     Serial.print(sdp.getDifferentialPressure());
     Serial.print("Pa | ");
 
-    Serial.print("Temp: ")
+    Serial.print("Temp: ");
     Serial.print(sdp.getTemperature());
     Serial.print("C\n");
   } else {
-    Serial.print("Error in readSample(), ret = ")
+    Serial.print("Error in readSample(), ret = ");
     Serial.println(ret);
   }
 
