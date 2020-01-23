@@ -73,7 +73,7 @@ int SDPSensor::readSample()
   delay(100); // theoretically 45ms
 
   if (I2CHelper::i2c_read(mI2CAddress, data, DATA_LEN) != 0) {
-    return 1;
+    return 2;
   }
 
   // TODO: check CRC
