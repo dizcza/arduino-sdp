@@ -47,6 +47,29 @@ public:
   int init();
 
   /**
+   * start continuously making measurements in sensor
+   * @return 0 on success, error code otherwise
+   */
+  int startContinuous(bool averaging = true);
+
+  /**
+   * wait for sensor to start continuously making measurements
+   */
+  void startContinuousWait(bool stabilize = true);
+
+  /**
+   * read continuously-measured data from sensor
+   * @return 0 on success, error code otherwise
+   */
+  int readContinuous();
+
+  /**
+   * stop continuously making measurements in sensor
+   * @return 0 on success, error code otherwise
+   */
+  int stopContinuous();
+
+  /**
    * read sensor data from sensor
    * @return 0 on success, error code otherwise
    */
@@ -69,6 +92,11 @@ private:
 
   float mDifferentialPressure;
   float mTemperature;
+  
+  /**
+   * parse the sensor data from an I2C read
+   */
+  void parseReading(uint8_t data[], uint8_t data_size);
 };
 
 class SDP3XSensor : public SDPSensor
