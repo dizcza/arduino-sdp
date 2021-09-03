@@ -53,6 +53,20 @@ int SDPSensor::init()
     return 3;
   }
 
+  uint8_t cmd_write[CMD_LEN] = { 0x36, 0x2F };
+  const uint8_t DATA_LEN_WRITE = 9;
+  if (I2CHelper::i2c_write(mI2CAddress, cmd_write, CMD_LEN) != 0) {
+    return 4;
+  }
+
+  delay(45);
+
+  if (I2CHelper::i2c_read(mI2CAddress, data, DATA_LEN_WRITE) != 0) {
+    return 5;
+  }
+
+  mDiffPressureScale = ((int16_t)data[6]) << 8 | data[7];
+
   // at this point, we don't really care about the data just yet, but
   // we may use that in the future. Either way, the sensor responds, and
   return 0;
@@ -62,27 +76,31 @@ int SDPSensor::startContinuous(bool averaging)
 {
   const uint8_t CMD_LEN = 2;
   uint8_t cmd[CMD_LEN] = { 0x36, (averaging) ? 0x15 : 0x1E };
-  
-  return I2CHelper::i2c_write(mI2CAddress, cmd, CMD_LEN);
+  int ret = I2CHelper::i2c_write(mI2CAddress, cmd, CMD_LEN);
+  // wait for sensor to start continuously making measurements
+  delay(20);
+  return ret;
 }
 
-void SDPSensor::startContinuousWait(bool stabilize)
+int SDPSensor::reset()
 {
-  delay(8);
-  if (stabilize) {
-    delay(12);
-  }
+    const uint8_t CMD_LEN = 2;
+    uint8_t cmd[CMD_LEN] = { 0x00, 0x06 };
+    int ret = I2CHelper::i2c_write(mI2CAddress, cmd, CMD_LEN);
+    delay(20);
+    return ret;
 }
 
-int SDPSensor::readContinuous() {
-  const uint8_t DATA_LEN = 9;
+int SDPSensor::readContinuous(float *diffPressure) {
+  const uint8_t DATA_LEN = 2;
   uint8_t data[DATA_LEN] = { 0 };
 
   if (I2CHelper::i2c_read(mI2CAddress, data, DATA_LEN) != 0) {
     return 2;
   }
-  
-  parseReading(data, DATA_LEN);
+
+  int16_t dp_raw  = ((int16_t)data[0]) << 8 | data[1];
+  *diffPressure = dp_raw / (float)mDiffPressureScale;
   
   return 0;
 }
@@ -95,46 +113,42 @@ int SDPSensor::stopContinuous()
   return I2CHelper::i2c_write(mI2CAddress, cmd, CMD_LEN);
 }
 
-int SDPSensor::readSample()
+int SDPSensor::readTriggered(float *diffPressure)
 {
   const uint8_t CMD_LEN = 2;
   uint8_t cmd[CMD_LEN] = { 0x36, 0x2F };
 
-  const uint8_t DATA_LEN = 9;
+  const uint8_t DATA_LEN = 2;
   uint8_t data[DATA_LEN] = { 0 };
 
   if (I2CHelper::i2c_write(mI2CAddress, cmd, CMD_LEN) != 0) {
     return 1;
   }
 
-  delay(100); // theoretically 45ms
+  delay(45);
 
   if (I2CHelper::i2c_read(mI2CAddress, data, DATA_LEN) != 0) {
     return 2;
   }
 
-  parseReading(data, DATA_LEN);
+  int16_t dp_raw  = ((int16_t)data[0]) << 8 | data[1];
+  *diffPressure = dp_raw / (float)mDiffPressureScale;
 
   return 0;
 }
 
-float SDPSensor::getDifferentialPressure() const
+int SDPSensor::readTemperatureContinuous(float *temperature)
 {
-  return mDifferentialPressure;
+  const uint8_t DATA_LEN = 5;
+  uint8_t data[DATA_LEN] = { 0 };
+  
+  if (I2CHelper::i2c_read(mI2CAddress, data, DATA_LEN) != 0) {
+    return 2;
+  }
+
+  int16_t temp_raw = ((int16_t)data[3]) << 8 | data[4];
+  *temperature = temp_raw / 200.0;
+ 
+  return 0;
 }
 
-float SDPSensor::getTemperature() const
-{
-  return mTemperature;
-}
-
-void SDPSensor::parseReading(uint8_t data[], uint8_t size) {
-  // TODO: check CRC
-
-  int16_t dp_raw   = (int16_t)data[0] << 8 | data[1];
-  int16_t temp_raw = (int16_t)data[3] << 8 | data[4];
-  int16_t dp_scale  = (int16_t)data[6] << 8 | data[7];
-
-  mDifferentialPressure = dp_raw / (float)dp_scale;
-  mTemperature = temp_raw / 200.0;
-}

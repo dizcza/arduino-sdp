@@ -28,6 +28,8 @@
 #ifndef SDPSENSOR_H
 #define SDPSENSOR_H
 
+#include <stdint.h>
+
 class SDPSensor
 {
 public:
@@ -50,18 +52,17 @@ public:
    * start continuously making measurements in sensor
    * @return 0 on success, error code otherwise
    */
-  int startContinuous(bool averaging = true);
-
-  /**
-   * wait for sensor to start continuously making measurements
-   */
-  void startContinuousWait(bool stabilize = true);
+  int startContinuous(bool averaging = false);
 
   /**
    * read continuously-measured data from sensor
    * @return 0 on success, error code otherwise
    */
-  int readContinuous();
+  int readContinuous(float *diffPressure);
+
+  int readTemperatureContinuous(float *temperature);
+
+  int readTriggered(float *diffPressure);
 
   /**
    * stop continuously making measurements in sensor
@@ -69,47 +70,12 @@ public:
    */
   int stopContinuous();
 
-  /**
-   * read sensor data from sensor
-   * @return 0 on success, error code otherwise
-   */
-  int readSample();
-
-  /**
-   * Returns the last differential pressure value read - does NOT trigger a new measurement
-   * @return last differential pressure value read
-   */
-  float getDifferentialPressure() const;
-
-  /**
-   * Returns the last temperature value read - does NOT trigger a new measurement
-   * @return last temperature value read
-   */
-  float getTemperature()  const;
+  int reset();
 
 private:
   uint8_t mI2CAddress;
+  int16_t mDiffPressureScale;
 
-  float mDifferentialPressure;
-  float mTemperature;
-  
-  /**
-   * parse the sensor data from an I2C read
-   */
-  void parseReading(uint8_t data[], uint8_t data_size);
-};
-
-class SDP3XSensor : public SDPSensor
-{
-public:
-  SDP3XSensor() : SDPSensor(SDPSensor::SDP3X_I2C_ADDR_DEFAULT) {}
-  SDP3XSensor(uint8_t i2cAddr) : SDPSensor(i2cAddr) {}
-};
-
-class SDP8XXSensor : public SDPSensor
-{
-public:
-  SDP8XXSensor() : SDPSensor(SDPSensor::SDP8XX_I2C_ADDR_DEFAULT) {}
 };
 
 #endif /* SDPSENSOR_H */
