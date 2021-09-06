@@ -60,9 +60,7 @@ public:
    */
   int readContinuous(float *diffPressure);
 
-  int readTemperatureContinuous(float *temperature);
-
-  int readTriggered(float *diffPressure);
+  int readPressureAndTemperatureContinuous(float *diffPressure, float *temperature);
 
   /**
    * stop continuously making measurements in sensor
